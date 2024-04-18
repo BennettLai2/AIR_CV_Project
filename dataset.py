@@ -18,6 +18,7 @@ class RiverDataset(Dataset):
         mask_path = os.path.join(self.mask_dir, "mask_"+str(self.images[index]))
         image = np.array(Image.open(img_path).convert("RGB"), dtype=np.float32)
         mask = np.array(Image.open(mask_path).convert("L"), dtype=np.float32)
+        mask =  np.where(mask > 10, 255.0, 0.0)
         mask[mask == 255.0] = 1.0
 
         if self.transform is not None:
