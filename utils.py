@@ -3,19 +3,14 @@ import torchvision
 from dataset import RiverDataset
 from torch.utils.data import DataLoader
 
-# These are util functions to support the rest of the code. Should mostly be self explanatory. 
-
-# saving checkpoint
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
 
-# loading checkpoint
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
-# loading traing and val data. 
 def get_loaders(
     train_dir,
     train_maskdir,
@@ -57,53 +52,84 @@ def get_loaders(
 
     return train_loader, val_loader
 
-# checking accuracy
 def check_accuracy(loader, model, device="cuda"):
-    num_correct = 0
+    num_correct_pix = 0
     num_pixels = 0
-    dice_score = 0
-    # eval mode
+    false_positives = 0
+    false_negatives = 0
+    true_positives = 0
+    true_negatives = 0
+    total_images = 0
+    dice_score_pix = 0
+    dice_score_img = 0
     model.eval()
 
-    # calculating accuracy and dice score. 
     with torch.no_grad():
         for x, y in loader:
             x = x.to(device)
             y = y.to(device).unsqueeze(1)
             preds = torch.sigmoid(model(x))
             preds = (preds > 0.5).float()
-            # accuracy
-            num_correct += (preds == y).sum()
+
+            # Pixel Based Accuracy
+            num_correct_pix += (preds == y).sum()
             num_pixels += torch.numel(preds)
-            # dice score
-            dice_score += (2 * (preds * y).sum()) / (
+            dice_score_pix += (2 * (preds * y).sum()) / (
                 (preds + y).sum() + 1e-8
             )
 
+            # Image Based Accuracy
+            crop_slice = slice(10,-10)
+            cropped_preds = preds[:, :, crop_slice, crop_slice]
+            cropped_y = y[:, :, crop_slice, crop_slice]
+            preds_binary = cropped_preds.reshape(cropped_preds.size(0), -1).max(1)[0]
+            y_binary = cropped_y.reshape(cropped_y.size(0), -1).max(1)[0]
+            false_positives += ((preds_binary == 1) & (y_binary == 0)).sum().item()
+            false_negatives += ((preds_binary == 0) & (y_binary == 1)).sum().item()
+            true_positives += ((preds_binary == 1) & (y_binary == 1)).sum().item()
+            true_negatives += ((preds_binary == 0) & (y_binary == 0)).sum().item()
+            total_images += preds.size(0)
+
+    print("Pixel Based Metrics:")
     print(
-        f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100:.2f}"
+        f"Got {num_correct_pix}/{num_pixels} with acc {num_correct_pix/num_pixels*100:.2f}"
     )
-    print(f"Dice score: {dice_score/len(loader)}")
-    # train mode
+    print(f"Dice score: {dice_score_pix/len(loader)}")
+    print()
+    print("Image Based Metrics:")
+    num_correct_img = true_positives + true_negatives
+    print(
+        f"Got {num_correct_img}/{total_images} with acc {num_correct_img/total_images*100:.2f}"
+    )
+    print(
+        f"Got {true_positives} true positives"
+    )
+    print(
+        f"Got {true_negatives} true negatives"
+    )
+    print(
+        f"Got {false_positives} false positives"
+    )
+    print(
+        f"Got {false_negatives} false negatives"
+    )
     model.train()
 
-# saving predictoins and ground truth pairs
 def save_predictions_as_imgs(
     loader, model, folder="saved_images/", device="cuda"
 ):
-    # eval mode
     model.eval()
     for idx, (x, y) in enumerate(loader):
+        torchvision.utils.save_image(
+            x, f"{folder}/actual_{idx}.png"
+        )
         x = x.to(device=device)
         with torch.no_grad():
             preds = torch.sigmoid(model(x))
             preds = (preds > 0.5).float()
-        # printing prediction
         torchvision.utils.save_image(
             preds, f"{folder}/pred_{idx}.png"
         )
-        # printing ground truth
         torchvision.utils.save_image(y.unsqueeze(1), f"{folder}{idx}.png")
 
-    # train mode
     model.train()
