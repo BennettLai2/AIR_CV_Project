@@ -3,14 +3,19 @@ import torchvision
 from dataset import RiverDataset
 from torch.utils.data import DataLoader
 
+# These are util functions to support the rest of the code. Should mostly be self explanatory. 
+
+# saving checkpoint
 def save_checkpoint(state, filename="my_checkpoint.pth.tar"):
     print("=> Saving checkpoint")
     torch.save(state, filename)
 
+# loading checkpoint
 def load_checkpoint(checkpoint, model):
     print("=> Loading checkpoint")
     model.load_state_dict(checkpoint["state_dict"])
 
+# loading traing and val data. 
 def get_loaders(
     train_dir,
     train_maskdir,
@@ -52,20 +57,25 @@ def get_loaders(
 
     return train_loader, val_loader
 
+# checking accuracy
 def check_accuracy(loader, model, device="cuda"):
     num_correct = 0
     num_pixels = 0
     dice_score = 0
+    # eval mode
     model.eval()
 
+    # calculating accuracy and dice score. 
     with torch.no_grad():
         for x, y in loader:
             x = x.to(device)
             y = y.to(device).unsqueeze(1)
             preds = torch.sigmoid(model(x))
             preds = (preds > 0.5).float()
+            # accuracy
             num_correct += (preds == y).sum()
             num_pixels += torch.numel(preds)
+            # dice score
             dice_score += (2 * (preds * y).sum()) / (
                 (preds + y).sum() + 1e-8
             )
@@ -74,20 +84,26 @@ def check_accuracy(loader, model, device="cuda"):
         f"Got {num_correct}/{num_pixels} with acc {num_correct/num_pixels*100:.2f}"
     )
     print(f"Dice score: {dice_score/len(loader)}")
+    # train mode
     model.train()
 
+# saving predictoins and ground truth pairs
 def save_predictions_as_imgs(
     loader, model, folder="saved_images/", device="cuda"
 ):
+    # eval mode
     model.eval()
     for idx, (x, y) in enumerate(loader):
         x = x.to(device=device)
         with torch.no_grad():
             preds = torch.sigmoid(model(x))
             preds = (preds > 0.5).float()
+        # printing prediction
         torchvision.utils.save_image(
             preds, f"{folder}/pred_{idx}.png"
         )
+        # printing ground truth
         torchvision.utils.save_image(y.unsqueeze(1), f"{folder}{idx}.png")
 
+    # train mode
     model.train()

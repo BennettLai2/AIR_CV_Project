@@ -22,12 +22,14 @@ NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
-LOAD_MODEL = False
+LOAD_MODEL = False  # Turn to True if you already have a checkpoint. 
+# Where is the data?
 TRAIN_IMG_DIR = "data/train_images/"
 TRAIN_MASK_DIR = "data/train_masks/"
 VAL_IMG_DIR = "data/val_images/"
 VAL_MASK_DIR = "data/val_masks/"
 
+# Training
 def train_fn(loader, model, optimizer, loss_fn, scaler):
     loop = tqdm(loader)
 
@@ -50,9 +52,10 @@ def train_fn(loader, model, optimizer, loss_fn, scaler):
 
 
 def main():
+    # Transformation for training. 
+    # Randomized image agumentation, then normalize. 
     train_transform = A.Compose(
         [
-            # A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
             A.Rotate(limit=35, p=1.0),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.1),
@@ -65,9 +68,9 @@ def main():
         ],
     )
 
+    # Normalizing validation set. 
     val_transforms = A.Compose(
         [
-            # A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
             A.Normalize(
                 mean=[0.0, 0.0, 0.0],
                 std=[1.0, 1.0, 1.0],
@@ -76,11 +79,13 @@ def main():
             ToTensorV2(),
         ],
     )
-
+    
+    # Initializing model. 
     model = UNET(in_channels=3, out_channels=1).to(DEVICE)
     loss_fn = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
+    # Getting data from RiverDataset. See dataset.py and util.py
     train_loader, val_loader = get_loaders(
         TRAIN_IMG_DIR,
         TRAIN_MASK_DIR,
@@ -93,13 +98,15 @@ def main():
         PIN_MEMORY,
     )
 
+    # loading checkpoint
     if LOAD_MODEL:
         load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
 
-
+    # Checking initial accuracy. Baseline for the model 
     check_accuracy(val_loader, model, device=DEVICE)
     scaler = torch.cuda.amp.GradScaler()
 
+    # Training
     for epoch in range(NUM_EPOCHS):
         train_fn(train_loader, model, optimizer, loss_fn, scaler)
         # save model
