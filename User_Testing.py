@@ -1,9 +1,24 @@
 import os
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 from patchify import patchify
+import torch
+import torchvision.transforms as transforms
+import torchvision
+from torch.utils.data import DataLoader
+from model import UNET
+from utils import (load_checkpoint)
+from PIL import Image
+from matplotlib import pyplot as plt
 
+# Change here. Put your input image in user/input. Make sure there is only 1 file. 
+input_path = "user/input"
+temp_path = "user/temp"
+output_path = "user/output"
+image_name = "img_1.jpg"
+ckpt = "my_checkpoint_advanced.pth.tar"
+overlay_color = (255, 0, 0)
+#################
 
 def rename_files(input_folder):
     # List all files in the directory
@@ -84,27 +99,6 @@ def create_mask(input_folder, output_folder):
 #     # Create masks
 #     create_mask(images_input, images_output)
 
-import torch
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-import torchvision
-from model import UNET
-from utils import (load_checkpoint)
-from PIL import Image
-import numpy as np
-import matplotlib.pyplot as plt
-from tqdm import tqdm
-import torch.nn as nn
-import torch.optim as optim
-from model import UNET
-from utils import (
-    load_checkpoint,
-    save_checkpoint,
-    get_loaders,
-    check_accuracy,
-    save_predictions_as_imgs,
-)
-
 # Step 1: Preprocess the image
 def preprocess_image(image_path):
     transform = transforms.Compose([
@@ -123,7 +117,7 @@ def preprocess_image(image_path):
 
 # Step 2: Load your pre-trained PyTorch model
 model = UNET(in_channels=3, out_channels=1).to("cuda")
-load_checkpoint(torch.load("my_checkpoint_advanced.pth.tar"), model)
+load_checkpoint(torch.load(ckpt), model)
 model.eval()  # Set the model to evaluation mode
 
 # Step 3: Make prediction on the image
@@ -210,8 +204,6 @@ def reconstruct_image(patches_folder, reconstructed_folder):
 #     # Reconstruct images
 #     reconstruct_image(output_folder, reconstructed_folder)
 
-from PIL import Image
-import matplotlib.pyplot as plt
 
 def overlay(img_path, mask_path): 
     full_image = Image.open(img_path)
@@ -224,7 +216,7 @@ def overlay(img_path, mask_path):
     binary_pixels = binary_image.load()
 
     # Define the RGB value for pink
-    color = (255, 0, 0)  # Adjust the values as needed
+    color = overlay_color  # Adjust the values as needed
 
     # Iterate over each pixel of the binary image
     width, height = binary_image.size
@@ -250,13 +242,6 @@ def delete_files_in_folder(folder_path):
             #     os.rmdir(file_path)
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
-
-# Change here. Put your input image in user/input. Make sure there is only 1 file. 
-input_path = "user/input"
-temp_path = "user/temp"
-output_path = "user/output"
-image_name = "img_1.jpg"
-#################
 
 delete_files_in_folder(temp_path)
 delete_files_in_folder(output_path)
