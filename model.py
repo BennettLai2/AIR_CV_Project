@@ -6,17 +6,48 @@ import torchvision.transforms.functional as TF
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DoubleConv, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False, dtype=torch.float32),
-            nn.BatchNorm2d(out_channels, dtype=torch.float32),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=False, dtype=torch.float32),
-            nn.BatchNorm2d(out_channels, dtype=torch.float32),
-            nn.ReLU(inplace=True),
-        )
+        self.a = nn.Conv2d(in_channels, out_channels, 3, 1, 1, bias=False, dtype=torch.float32)
+        self.b = nn.BatchNorm2d(out_channels, dtype=torch.float32)
+        self.c = nn.ReLU(inplace=True)
+        self.d = nn.Conv2d(out_channels, out_channels, 3, 1, 1, bias=False, dtype=torch.float32)
+        self.e = nn.BatchNorm2d(out_channels, dtype=torch.float32)
+        self.f = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        return self.conv(x)
+        y = x
+        x = self.a(x)
+        # if not x.dtype == torch.float32: 
+        #         # Define the file path
+        #         file_path1 = "errorlog1.txt"
+        #         file_path2 = "errorlog2.txt"
+
+        #         # Open the file in write mode
+        #         with open(file_path1, 'w') as file:
+        #             # Redirect the print output to the file
+        #             print(y, file=file)
+        #         # Open the file in write mode
+        #         with open(file_path2, 'w') as file:
+        #             # Redirect the print output to the file
+        #             print(x, file=file)
+        #         if torch.isnan(x).any():
+        #                 print("nan")
+        #         raise ValueError("a")
+        x = self.b(x)
+        # if not x.dtype == torch.float32: 
+        #         raise ValueError("b")
+        x = self.c(x)
+        # if not x.dtype == torch.float32: 
+        #         raise ValueError("c")
+        x = self.d(x)
+        # if not x.dtype == torch.float32: 
+        #         raise ValueError("d")
+        x = self.e(x)
+        # if not x.dtype == torch.float32: 
+        #         raise ValueError("e")
+        x = self.f(x)
+        # if not x.dtype == torch.float32: 
+        #         raise ValueError("f")
+        return x
 
 # Unet model. Architecture explained in this paper: https://arxiv.org/pdf/1505.04597v1.pdf
 class UNET(nn.Module):
