@@ -252,7 +252,6 @@ image_files = [f for f in os.listdir(temp_path) if f.endswith(('.jpg', '.jpeg', 
 
 for image_file in image_files:
     pred_images(temp_path+"/"+str(image_file))
-# # pred_images(temp_path+"/"+str("img_1_3_4_.jpg"))
 
 # Reconstruct images
 reconstruct_image(temp_path, output_path)

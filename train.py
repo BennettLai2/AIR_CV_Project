@@ -22,7 +22,8 @@ NUM_WORKERS = 2
 IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
-LOAD_MODEL = False  # Turn to True if you already have a checkpoint. 
+LOAD_MODEL = True  # Turn to True if you already have a checkpoint. 
+MODEL_NAME = "my_checkpoint.pth.tar"
 # Where is the data?
 TRAIN_IMG_DIR = "data/train_images/"
 TRAIN_MASK_DIR = "data/train_masks/"
@@ -102,7 +103,7 @@ def main():
 
     # loading checkpoint
     if LOAD_MODEL:
-        load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
+        load_checkpoint(torch.load(MODEL_NAME), model)
 
     # Checking initial accuracy. Baseline for the model 
     check_accuracy(val_loader, model, device=DEVICE)

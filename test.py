@@ -17,29 +17,15 @@ IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
 LOAD_MODEL = True
-TRAIN_IMG_DIR = "/home/brian/Desktop/AIR_CV_Project-main/data/train_images/"
-TRAIN_MASK_DIR = "/home/brian/Desktop/AIR_CV_Project-main/data/train_masks/"
-VAL_IMG_DIR = "/home/brian/Desktop/AIR_CV_Project-main/data/val_images/"
-VAL_MASK_DIR = "/home/brian/Desktop/AIR_CV_Project-main/data/val_masks/"
+MODEL_NAME = "my_checkpoint.pth.tar"
+TRAIN_IMG_DIR = "data/s_train_images/"
+TRAIN_MASK_DIR = "data/s_train_masks/"
+VAL_IMG_DIR = "data/s_val_images/"
+VAL_MASK_DIR = "data/s_val_masks/"
 
 def main():
     model = UNET(in_channels=3, out_channels=1).to("cuda")
-    load_checkpoint(torch.load("my_checkpoint.pth.tar"), model)
-
-    train_transform = A.Compose(
-        [
-            # A.Resize(height=IMAGE_HEIGHT, width=IMAGE_WIDTH),
-            A.Rotate(limit=35, p=1.0),
-            A.HorizontalFlip(p=0.5),
-            A.VerticalFlip(p=0.1),
-            A.Normalize(
-                mean=[0.0, 0.0, 0.0],
-                std=[1.0, 1.0, 1.0],
-                max_pixel_value=255.0,
-            ),
-            ToTensorV2(),
-        ],
-    )
+    load_checkpoint(torch.load(MODEL_NAME), model)
 
     val_transforms = A.Compose(
         [
@@ -59,7 +45,7 @@ def main():
         VAL_IMG_DIR,
         VAL_MASK_DIR,
         BATCH_SIZE,
-        train_transform,
+        None,
         val_transforms,
         NUM_WORKERS,
         PIN_MEMORY,
